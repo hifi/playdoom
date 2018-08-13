@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { background: #000; text-align: center; }
+            textarea { width: 640px; height: 200px; font: monospace; border: 0; background: #000; color: #999; overflow: scroll; overflow-x: hidden; }
+        </style>
+    </head>
+    <body>
+        <canvas id="game" style="width: 640px; height: 480px; background: gray"></canvas>
+        <br>
+        <textarea id="log"></textarea>
+
+        <script src="js/zip/zip.js"></script>
+        <script src="js/doom.js"></script>
+
+        <script>
+            new Doom(document.getElementById('game'), document.getElementById('log'));
+        </script>
+    </body>
+</html>
