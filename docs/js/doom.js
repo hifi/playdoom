@@ -85,19 +85,50 @@ var Doom = function(canvas, logger) {
             print: log,
             printErr: log,
             canvas: document.getElementById('game'),
+            arguments: [ '-iwad',  '/doom1.wad' ],
+            quit: function() {
+                FS.syncfs(false, function(e) { console.log('syncfs false failed: ' + e); });
+            },
             preRun: [
             ]
         };
+
         Module["preRun"].push(function() {
+            FS.mkdir('/data');
+            FS.mount(IDBFS, {}, '/data');
+            FS.chdir('/data');
+
             FS.writeFile('/doom1.wad', new Uint8Array(iwad));
-            FS.writeFile('/default.cfg', [
-                "use_mouse 0",
-            ].join("\n"));
-            FS.writeFile('/chocolate-doom.cfg', [
-                "fullscreen 0",
-                "grabmouse 0"
-            ].join("\n"));
+            console.log(runDependencies);
+            runDependencies++;
+
+            log('Going to sync config from IndexedDB...');
+            FS.syncfs(true, function(e) {
+                try {
+                    FS.lookupPath('/data/default.cfg');
+                } catch(e) {
+                    console.log('Creating new default.cfg');
+                    FS.writeFile('/data/default.cfg', [
+                        "use_mouse 0",
+                    ].join("\n"));
+                }
+
+                try {
+                    FS.lookupPath('/data/chocolate-doom.cfg');
+                } catch(e) {
+                    console.log('Creating new chocolate-doom.cfg');
+                    FS.writeFile('/data/chocolate-doom.cfg', [
+                        "fullscreen 0",
+                        "grabmouse 0"
+                    ].join("\n"));
+                }
+
+                log('Sync from IndexedDB done, starting app.');
+                runDependencies--;
+                run();
+            });
         });
+
         var s = document.createElement('script');
         s.src = 'js/chocolate-doom.js';
         document.getElementsByTagName('body')[0].append(s);
