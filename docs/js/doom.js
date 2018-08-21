@@ -110,6 +110,7 @@ var Doom = function(canvas, logger) {
                     console.log('Creating new default.cfg');
                     FS.writeFile('/data/default.cfg', [
                         "use_mouse 0",
+                        "screenblocks 10",
                     ].join("\n"));
                 }
 
