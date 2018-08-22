@@ -7,7 +7,7 @@ class Doom {
 
     static loadModule(path) {
         return new Promise(resolve => {
-            var s = document.createElement('script');
+            const s = document.createElement('script');
             s.async = true;
             s.src = path;
             s.onload = resolve;
@@ -17,7 +17,7 @@ class Doom {
 
     static loadFile(path) {
         return new Promise(resolve => {
-            var r = new XMLHttpRequest();
+            const r = new XMLHttpRequest();
             r.responseType = 'blob';
             r.open('GET', path);
             r.addEventListener('load', function() {
@@ -33,19 +33,19 @@ class Doom {
         this.wasmLoader = Doom.loadModule('js/chocolate-doom.js');
 
         this.log('Loading doom19s.zip...');
-        var file = await Doom.loadFile('doom19s.zip');
+        const file = await Doom.loadFile('doom19s.zip');
 
         this.log('Extracting doom19s.zip...');
-        var files = await this.unzip(file, ['DOOMS_19.1', 'DOOMS_19.2']);
+        const files = await this.unzip(file, ['DOOMS_19.1', 'DOOMS_19.2']);
 
         this.log('Combining DOOMS_19.1 and DOOMS_19.2 as DOOM_19.zip...');
-        var innerZip = new Blob([ files['DOOMS_19.1'], files['DOOMS_19.2'] ], { type: 'application/zip' });
+        const innerZip = new Blob([ files['DOOMS_19.1'], files['DOOMS_19.2'] ], { type: 'application/zip' });
 
         this.log('Extracting DOOM1.WAD from DOOMS_19.zip...');
-        var innerFiles = await this.unzip(innerZip, ['DOOM1.WAD']);
+        const innerFiles = await this.unzip(innerZip, ['DOOM1.WAD']);
 
         this.iwad = await new Promise(resolve => {
-            var r = new FileReader();
+            const r = new FileReader();
             r.onload = function(e) {
                 resolve(e.target.result);
             };
@@ -61,7 +61,7 @@ class Doom {
     // this still needs a refactor
     unzip(data, files) {
         return new Promise(resolve => {
-            var out = [];
+            let out = [];
 
             zip.createReader(new zip.BlobReader(data), reader => {
                 reader.getEntries(entries => {
@@ -89,7 +89,7 @@ class Doom {
         this.log('Init completed, launching Chocolate Doom');
         this.log('');
 
-        var game = DoomModule({
+        const game = DoomModule({
             print: s => this.log(s),
             printErr: s => this.log('E: ' + s),
             canvas: this.canvas,
