@@ -1,3 +1,5 @@
+'use strict';
+
 // uh oh, I'm no JS developer (but I'm getting better)
 class Doom {
     constructor(canvas, logger) {
