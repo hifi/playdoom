@@ -111,11 +111,11 @@ class Doom {
         game.quit = () => {
             localStorage.setItem(
                 'default.cfg',
-                JSON.stringify(game.FS.readFile('/data/default.cfg', { encoding: 'utf8' }))
+                JSON.stringify(game.FS.readFile('/default.cfg', { encoding: 'utf8' }))
             );
             localStorage.setItem(
                 'chocolate-doom.cfg',
-                JSON.stringify(game.FS.readFile('/data/chocolate-doom.cfg', { encoding: 'utf8' }))
+                JSON.stringify(game.FS.readFile('/chocolate-doom.cfg', { encoding: 'utf8' }))
             );
         };
     }
