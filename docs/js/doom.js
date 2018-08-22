@@ -15,15 +15,22 @@ class Doom {
 
         this.log('Extracting doom19s.zip...');
 
-        var files = await this.unzip(file, ['DOOMS_19.1', 'DOOMS_19.2']);
+        var files = await this.unzip(new Blob([file], { type: 'application/zip' }), ['DOOMS_19.1', 'DOOMS_19.2']);
 
         this.log('Combining DOOMS_19.1 and DOOMS_19.2 as DOOM_19.zip...');
-        var innerZip = await Doom.joinBlobsAsArrayBuffer([ files['DOOMS_19.1'], files['DOOMS_19.2'] ]);
+        var innerZip = new Blob([ files['DOOMS_19.1'], files['DOOMS_19.2'] ], { type: 'application/zip' });
 
         this.log('Extracting DOOM1.WAD from DOOMS_19.zip...');
         var innerFiles = await this.unzip(innerZip, ['DOOM1.WAD']);
 
-        var iwad = await Doom.joinBlobsAsArrayBuffer([ innerFiles['DOOM1.WAD'] ]);
+        var iwad = await new Promise(resolve => {
+            var r = new FileReader();
+            r.onload = function(e) {
+                resolve(e.target.result);
+            };
+            r.readAsArrayBuffer(innerFiles['DOOM1.WAD']);
+        });
+
         this.run(iwad);
     }
 
@@ -49,7 +56,7 @@ class Doom {
         return new Promise(resolve => {
             var out = [];
 
-            zip.createReader(new zip.BlobReader(new Blob([data], { type: 'application/zip' })), function(reader) {
+            zip.createReader(new zip.BlobReader(data), function(reader) {
                 reader.getEntries(function(entries) {
                     for (var e of entries) {
                         if (files.indexOf(e.filename) == -1)
@@ -68,28 +75,6 @@ class Doom {
                 });
             });
         });
-    }
-
-    static async joinBlobsAsArrayBuffer(blobs) {
-        const totalSize = blobs.reduce((a,b) => a + b.size, 0);
-
-        var out = new Uint8Array(totalSize);
-        var pos = 0;
-
-        for (var blob of blobs) {
-            var ab = await new Promise(resolve => {
-                var r = new FileReader();
-                r.onload = function(e) {
-                    resolve(e.target.result);
-                };
-                r.readAsArrayBuffer(blob);
-            });
-
-            out.set(new Uint8Array(ab), pos);
-            pos += ab.byteLength;
-        }
-
-        return out;
     }
 
     run(iwad) {
