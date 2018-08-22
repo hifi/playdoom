@@ -16,7 +16,12 @@
         <script src="js/doom.js"></script>
 
         <script>
-            new Doom(document.getElementById('game'), document.getElementById('log'));
+            zip.workerScriptsPath = "js/zip/";
+            (async function() {
+                var doom = new Doom(document.getElementById('game'), document.getElementById('log'));
+                await doom.init();
+                doom.run();
+            })();
         </script>
     </body>
 </html>
