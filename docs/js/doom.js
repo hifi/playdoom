@@ -63,24 +63,22 @@ class Doom {
         return new Promise(resolve => {
             var out = [];
 
-            zip.createReader(new zip.BlobReader(data), (reader => {
-                reader.getEntries((entries => {
-                    for (var e of entries) {
+            zip.createReader(new zip.BlobReader(data), reader => {
+                reader.getEntries(entries => {
+                    for (let e of entries) {
                         if (files.indexOf(e.filename) == -1)
                             continue;
 
-                        (function(e) {
-                            this.log('... ' + e.filename);
-                            e.getData(new zip.BlobWriter(), function(edata) {
-                                out[e.filename] = edata;
-                                if (Object.keys(out).length == files.length) {
-                                    resolve(out);
-                                }
-                            });
-                        }).bind(this)(e);
+                        this.log('... ' + e.filename);
+                        e.getData(new zip.BlobWriter(), function(edata) {
+                            out[e.filename] = edata;
+                            if (Object.keys(out).length == files.length) {
+                                resolve(out);
+                            }
+                        });
                     }
-                }).bind(this));
-            }).bind(this));
+                });
+            });
         });
     }
 
