@@ -1,104 +1,44 @@
 'use strict';
 
-// uh oh, I'm no JS developer (but I'm getting better)
-class Doom {
-    constructor(canvas, logger) {
-        this.canvas = canvas;
-        this.logger = logger;
-    }
+// Target browsers based on included WebAssembly support:
+//   Edge 16+
+//   Firefox 52+ (excluding 52 ESR)
+//   Chrome 57+ (includes WebView)
+//   macOS Safari 11+
+//   OS Safari 11.2+
 
-    static loadModule(path) {
-        return new Promise(resolve => {
+// Tested browsers: Firefox 61, Chromium 68, Edge 17
+
+class Doom {
+    constructor(canvas, logger = console.log) {
+        this.canvas = canvas;
+        this.log = logger;
+
+        this.log('doom.js init');
+        this.wasmLoader = new Promise(resolve => {
             const s = document.createElement('script');
             s.async = true;
-            s.src = path;
+            s.src = 'js/chocolate-doom.js';
             s.onload = resolve;
             document.getElementsByTagName('body')[0].append(s);
         });
     }
 
-    static loadFile(path) {
-        return new Promise(resolve => {
-            const r = new XMLHttpRequest();
-            r.responseType = 'blob';
-            r.open('GET', path);
-            r.addEventListener('load', function() {
-                resolve(r.response);
-            });
-            r.send();
-        });
-    }
-
-    async init() {
-        this.log('doom.js init');
-        this.log('Lazy loading chocolate-doom.js');
-        this.wasmLoader = Doom.loadModule('js/chocolate-doom.js');
-
-        this.log('Loading doom19s.zip...');
-        const file = await Doom.loadFile('doom19s.zip');
-
-        this.log('Extracting doom19s.zip...');
-        const files = await this.unzip(file, ['DOOMS_19.1', 'DOOMS_19.2']);
-
-        this.log('Combining DOOMS_19.1 and DOOMS_19.2 as DOOM_19.zip...');
-        const innerZip = new Blob([ files['DOOMS_19.1'], files['DOOMS_19.2'] ], { type: 'application/zip' });
-
-        this.log('Extracting DOOM1.WAD from DOOMS_19.zip...');
-        const innerFiles = await this.unzip(innerZip, ['DOOM1.WAD']);
-
-        this.iwad = await new Promise(resolve => {
-            const r = new FileReader();
-            r.onload = function(e) {
-                resolve(e.target.result);
-            };
-            r.readAsArrayBuffer(innerFiles['DOOM1.WAD']);
-        });
-    }
-
-    log(text) {
-        this.logger.append(text + "\n");
-        this.logger.scrollTop = this.logger.scrollHeight;
-    }
-
-    // this still needs a refactor
-    unzip(data, files) {
-        return new Promise(resolve => {
-            let out = [];
-
-            zip.createReader(new zip.BlobReader(data), reader => {
-                reader.getEntries(entries => {
-                    for (let e of entries) {
-                        if (files.indexOf(e.filename) == -1)
-                            continue;
-
-                        this.log('... ' + e.filename);
-                        e.getData(new zip.BlobWriter(), function(edata) {
-                            out[e.filename] = edata;
-                            if (Object.keys(out).length == files.length) {
-                                resolve(out);
-                            }
-                        });
-                    }
-                });
-            });
-        });
-    }
-
-    async run() {
+    async run(iwad) {
         this.log('Waiting for WebAssembly to finish loading...');
         await this.wasmLoader;
 
-        this.log('Init completed, launching Chocolate Doom');
+        this.log('Launching Chocolate Doom');
         this.log('');
 
         const game = DoomModule({
             print: s => this.log(s),
-            printErr: s => this.log('E: ' + s),
+            printErr: s => this.log(s, 'error'),
             canvas: this.canvas,
-            arguments: [ '-iwad',  '/doom1.wad' ],
+            arguments: [ '-iwad',  '/game.wad' ],
         });
         game.preRun.push(() => {
-            game.FS.writeFile('/doom1.wad', new Uint8Array(this.iwad));
+            game.FS.writeFile('/game.wad', iwad);
 
             game.FS.writeFile('/default.cfg', JSON.parse(localStorage.getItem('default.cfg')) || [
                 "use_mouse 0",

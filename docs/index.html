@@ -4,23 +4,96 @@
         <meta charset="UTF-8">
         <style>
             body { background: #000; text-align: center; }
-            textarea { width: 640px; height: 200px; font: monospace; border: 0; background: #000; color: #999; overflow: scroll; overflow-x: hidden; }
+            #log { background: transparent; color: #999; font-family: 'Courier New', 'Courier', monospace; position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; overflow: hidden; white-space: pre-wrap; text-align: left; font-size: 10pt; }
         </style>
     </head>
     <body>
-        <canvas id="game" style="width: 640px; height: 480px; background: gray"></canvas>
-        <br>
-        <textarea id="log"></textarea>
+        <div style="display: inline-block; width: 640px; height: 480px; position: relative;">
+            <div id="log"></div>
+            <canvas id="game" style="position: absolute; top: 0; right: 0; left: 0; bottom: 0; width: 100%; height: 100%; background: transparent"></canvas>
+        </div>
+
+        <script>
+            let logEl = document.getElementById('log');
+
+            function logger(message, type) {
+                if (type === 'error') {
+                    logEl.append('E: ' + message + "\n");
+                    console.error(message);
+                } else {
+                    logEl.append(message + "\n");
+                    console.log(message);
+                }
+            }
+        </script>
 
         <script src="js/zip/zip.js"></script>
+        <script>
+            // providing consistent API for performance testing
+            zip.workerScriptsPath = "js/zip/";
+            function unzip(data, files) {
+                return new Promise(resolve => {
+                    let out = [];
+
+                    zip.createReader(new zip.BlobReader(data), reader => {
+                        reader.getEntries(entries => {
+                            for (let e of entries) {
+                                if (files.indexOf(e.filename) == -1)
+                                    continue;
+
+                                logger('... ' + e.filename);
+                                e.getData(new zip.BlobWriter(), function(edata) {
+                                    out[e.filename] = edata;
+                                    if (Object.keys(out).length == files.length) {
+                                        resolve(out);
+                                    }
+                                });
+                            }
+                        });
+                    });
+                });
+            }
+        </script>
         <script src="js/doom.js"></script>
 
         <script>
-            zip.workerScriptsPath = "js/zip/";
             (async function() {
-                var doom = new Doom(document.getElementById('game'), document.getElementById('log'));
-                await doom.init();
-                doom.run();
+
+                let doom = new Doom(document.getElementById('game'), logger);
+
+                logger('Loading doom19s.zip...');
+                const file = await new Promise(resolve => {
+                    const r = new XMLHttpRequest();
+                    r.responseType = 'blob';
+                    r.open('GET', 'doom19s.zip');
+                    r.addEventListener('load', function() {
+                        resolve(r.response);
+                    });
+                    r.send();
+                });
+
+                const beforeUnzip = (new Date().getTime());
+                logger('Extracting doom19s.zip...');
+                const files = await unzip(file, ['DOOMS_19.1', 'DOOMS_19.2']);
+
+                logger('Combining DOOMS_19.1 and DOOMS_19.2 as DOOM_19.zip...');
+                const innerZip = new Blob([ files['DOOMS_19.1'], files['DOOMS_19.2'] ], { type: 'application/zip' });
+
+                logger('Extracting DOOM1.WAD from DOOMS_19.zip...');
+                const innerFiles = await unzip(innerZip, ['DOOM1.WAD']);
+
+                iwad = await new Promise(resolve => {
+                    const r = new FileReader();
+                    r.onload = function(e) {
+                        resolve(e.target.result);
+                    };
+                    r.readAsArrayBuffer(innerFiles['DOOM1.WAD']);
+                });
+                const afterUnzip = (new Date().getTime());
+
+                logger('Extracting two layers took ' + (afterUnzip - beforeUnzip) + ' milliseconds');
+
+                doom.run(new Uint8Array(iwad));
             })();
         </script>
     </body>
