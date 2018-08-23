@@ -27,33 +27,29 @@
             }
         </script>
 
-        <script src="js/zip/zip.js"></script>
+        <script src="js/jszip.min.js"></script>
         <script>
-            // providing consistent API for performance testing
-            zip.workerScriptsPath = "js/zip/";
             function unzip(data, files) {
+                var zip = new JSZip();
+
                 return new Promise(resolve => {
                     let out = [];
 
-                    zip.createReader(new zip.BlobReader(data), reader => {
-                        reader.getEntries(entries => {
-                            for (let e of entries) {
-                                if (files.indexOf(e.filename) == -1)
-                                    continue;
-
-                                logger('... ' + e.filename);
-                                e.getData(new zip.BlobWriter(), function(edata) {
-                                    out[e.filename] = edata;
-                                    if (Object.keys(out).length == files.length) {
-                                        resolve(out);
-                                    }
-                                });
-                            }
-                        });
+                    JSZip.loadAsync(data).then((zip) => {
+                        for (let f of files) {
+                            logger('... ' + f);
+                            zip.file(f).async('blob').then(data => {
+                                out[f] = data;
+                                if (Object.keys(out).length == files.length) {
+                                    resolve(out);
+                                }
+                            });
+                        }
                     });
                 });
             }
         </script>
+
         <script src="js/doom.js"></script>
 
         <script>
