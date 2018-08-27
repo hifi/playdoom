@@ -1,46 +1,34 @@
 'use strict';
 
-// Target browsers based on included WebAssembly support:
-//   Edge 16+
-//   Firefox 52+ (excluding 52 ESR)
-//   Chrome 57+ (includes WebView)
-//   macOS Safari 11+
-//   OS Safari 11.2+
-
-// Tested browsers: Firefox 61, Chromium 68, Edge 17
-
-class Doom {
+class DoomSetup {
     constructor(canvas, logger = console.log) {
         this.canvas = canvas;
         this.log = logger;
 
-        this.log('doom.js init');
+        this.log('setup.js init');
         this.wasmLoader = new Promise(resolve => {
             const s = document.createElement('script');
             s.async = true;
-            s.src = 'js/chocolate-doom.js';
+            s.src = 'js/chocolate-setup.js';
             s.onload = resolve;
             document.getElementsByTagName('body')[0].append(s);
         });
     }
 
-    async run(iwad) {
+    async run() {
         this.log('Waiting for WebAssembly to finish loading...');
         await this.wasmLoader;
 
         return new Promise(resolve => {
-            this.log('Launching Chocolate Doom');
+            this.log('Launching Chocolate Doom Setup');
             this.log('');
 
-            const game = DoomModule({
+            const game = DoomSetupModule({
                 print: s => this.log(s),
                 printErr: s => this.log(s, 'error'),
-                canvas: this.canvas,
-                arguments: [ '-iwad',  '/game.wad' ],
+                canvas: this.canvas
             });
             game.preRun.push(() => {
-                game.FS.writeFile('/game.wad', iwad);
-
                 game.FS.writeFile('/default.cfg', JSON.parse(localStorage.getItem('default.cfg')) || [
                     "use_mouse 0",
                     "screenblocks 10",

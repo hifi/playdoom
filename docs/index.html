@@ -51,6 +51,7 @@
         </script>
 
         <script src="js/doom.js"></script>
+        <script src="js/setup.js"></script>
 
         <script>
             (async function() {
@@ -89,7 +90,12 @@
 
                 logger('Extracting two layers took ' + (afterUnzip - beforeUnzip) + ' milliseconds');
 
-                doom.run(new Uint8Array(iwad));
+                let setup = new DoomSetup(document.getElementById('game'), logger);
+
+                while (1) {
+                    await doom.run(new Uint8Array(iwad));
+                    await setup.run();
+                }
             })();
         </script>
     </body>
